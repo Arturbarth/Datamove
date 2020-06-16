@@ -1,0 +1,13 @@
+*.dcu
+__history
+*.res
+Debug
+/*.dll
+*.exe
+instantclient12c
+*.log
+*.local
+*.dsk
+*.~dsk
+CRASH_LOG.TXT
+*.identcache
