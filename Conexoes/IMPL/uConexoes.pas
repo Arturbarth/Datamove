@@ -1,3 +1,15 @@
+{
+  Datamove - Conversor de Banco de Dados Firebird para Oracle
+  licensed under a APACHE 2.0
+
+  Projeto Particular desenvolvido por Artur Barth e Gilvano Piontkoski para realizar conversão de banco de dados
+  firebird para Oracle. Esse não é um projeto desenvolvido pela VIASOFT.
+
+  Toda e qualquer alteração deve ser submetida à
+  https://github.com/Arturbarth/Datamove
+}
+
+
 unit uConexoes;
 
 interface
@@ -87,7 +99,14 @@ end;
 
 function TModelConexao.AbrirConexao: iModelConexao;
 begin
-  oConexao.Connected := True;
+  try
+    oConexao.Connected := True;
+  except
+    on e:Exception do
+      begin
+      raise Exception.Create('Erro ao conectar ' + e.Message);
+    end;
+  end;
 end;
 
 procedure TModelConexao.CarregarParametros(AParametros: IParametrosConexao);
@@ -101,3 +120,15 @@ begin
 end;
 
 end.
+
+{
+  Datamove - Conversor de Banco de Dados Firebird para Oracle
+  licensed under a APACHE 2.0
+
+  Projeto Particular desenvolvido por Artur Barth e Gilvano Piontkoski para realizar conversão de banco de dados
+  firebird para Oracle. Esse não é um projeto desenvolvido pela VIASOFT.
+
+  Toda e qualquer alteração deve ser submetida à
+  https://github.com/Arturbarth/Datamove
+}
+

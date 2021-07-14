@@ -1,3 +1,15 @@
+{
+  Datamove - Conversor de Banco de Dados Firebird para Oracle
+  licensed under a APACHE 2.0
+
+  Projeto Particular desenvolvido por Artur Barth e Gilvano Piontkoski para realizar conversão de banco de dados
+  firebird para Oracle. Esse não é um projeto desenvolvido pela VIASOFT.
+
+  Toda e qualquer alteração deve ser submetida à
+  https://github.com/Arturbarth/Datamove
+}
+
+
 unit uThreadMoveDados;
 
 interface
@@ -9,10 +21,10 @@ uses
   FireDAC.Stan.Async, FireDAC.DApt, FireDAC.Comp.Client,
   Data.DB, FireDAC.Comp.DataSet, FireDAC.UI.Intf, FireDAC.Stan.Def, FireDAC.Stan.Pool, FireDAC.Phys, FireDAC.Phys.Oracle,
   FireDAC.Phys.FB, uConexoes, uParametrosConexao, uEnum, Vcl.StdCtrls,
-  uThreadMoveTabela;
+  uThreadMoveTabela, System.Generics.Collections;
 
 type
-  TThreadMoveDados = class(TThread)
+  TThreadMoveDados = class
   private
     FcMsg: String;
     FeTpLog: tpLog;
@@ -21,24 +33,32 @@ type
     FModelFirebird: TModelConexao;
     FModelOracle: TModelConexao;
     qryTabelas: TFDQuery;
-    FDConOracle: TFDConnection;
-    FDConFireBird: TFDConnection;
+
     procedure Logar(eTpLog: tpLog; cMsg: String);
     procedure SyncLogar;
-    procedure CarregarTabelasSistema;
-    procedure ConfigurarConexoes;
-    procedure MoverTabela(cTabela: String; nLinhas: Integer);
+
   protected
-    procedure Execute; override;
-    procedure MoverTabelasSistema;
+    //procedure Execute; override;
+
   public
     FmeLog: TMemo;
     FmeErros: TMemo;
     FConsulta: String;
     ThreadCount: Integer;
+    oListaThreads : TList;
     FpbStatus: TProgressBar;
+
+    FDConOracle: TFDConnection;
+    FDConFireBird: TFDConnection;
     FParOracle, FParmFirebird: IParametrosConexao;
-    constructor Create(CreateSuspended: Boolean); overload;
+
+    procedure CarregarTabelasSistema;
+    procedure ConfigurarConexoes;
+    procedure MoverTabela(cTabela: String; nLinhas: Integer);
+    procedure MoverTabelasSistema;
+
+
+    constructor Create; overload;
     destructor Destroy; override;
   end;
 
@@ -47,17 +67,21 @@ implementation
 uses System.SysUtils, uLog, uMoveDados;
 { TThreadMoveDados }
 
-procedure TThreadMoveDados.Execute;
+{procedure TThreadMoveDados.Execute;
 begin
   ThreadCount := 0;
+  oListaThreads := TList.Create;
   ConfigurarConexoes;
   MoverTabelasSistema;
-end;
+end;}
 
 procedure TThreadMoveDados.MoverTabelasSistema;
 var
   cTabela: String;
 begin
+  Logar(tplLog,' iniciar tabelas ');
+
+  qryTabelas.Connection := FDConFirebird;
   FmeLog.Clear;
   FmeErros.Clear;
   CarregarTabelasSistema;
@@ -84,14 +108,14 @@ end;
 procedure TThreadMoveDados.MoverTabela(cTabela: String; nLinhas: Integer);
 var
   oThreadMoveTabelas: TThreadMoveTabelas;
+  i: Integer;
   {dtini, dtfim, total: TDateTime;
   oMove: TMoveDados;}
 begin
 
-
   Inc(ThreadCount);
 
-  oThreadMoveTabelas := TThreadMoveTabelas.Create(true);
+  oThreadMoveTabelas := TThreadMoveTabelas.Create;
 
   oThreadMoveTabelas.FmeLog         := FmeLog;
   oThreadMoveTabelas.FmeErros       := FmeErros;
@@ -101,19 +125,33 @@ begin
   oThreadMoveTabelas.FLinhas        := nLinhas;
   oThreadMoveTabelas.FParmFirebird  := FParmFirebird;
   oThreadMoveTabelas.FParOracle     := FParOracle;
+
+
+  oThreadMoveTabelas.FDConOracle    := FDConOracle;
+  oThreadMoveTabelas.FDConFireBird  := FDConFireBird;
+
   oThreadMoveTabelas.FnTotalTabelas := FnTotalTabelas;
   oThreadMoveTabelas.FnTabelaAtual  := FnTabelaAtual;
-  oThreadMoveTabelas.Start;
+  oThreadMoveTabelas.MoverTabela(cTabela, nLinhas);;
 
-  if ThreadCount >= 10 then
+  {oListaThreads.Add(oThreadMoveTabelas);
+
+  if ThreadCount >= 8 then
     begin
-    while not oThreadMoveTabelas.Finalizou do
+    while oListaThreads.Count > 8 do begin
+      for I := 0 to oListaThreads.Count-1 do
+      begin
+        if TThreadMoveTabelas(oListaThreads[i]).Finalizou then
+          begin
+          Dec(ThreadCount);
+          oListaThreads.Remove(oListaThreads[i]);
+          Break;
+        end;
+      end;
+    end;
+    {while not oThreadMoveTabelas.Finalizou do
       Sleep(5);
-
-    ThreadCount := 0;
-  end;
-
-
+  end;?
 
 
 
@@ -136,21 +174,36 @@ procedure TThreadMoveDados.ConfigurarConexoes;
 //  oParOracle, oParmFirebird: IParametrosConexao;
 begin
 //  oParmFirebird := TParametrosConexao.New('127.0.0.1', '3050', 'E:\Bancos\INDIANAAGRI_MIGRA.FDB', 'VIASOFT', '153', 'FB');
-  FModelFirebird := TModelConexao.Create(FParmFirebird);
-  FDConFirebird := FModelFirebird.GetConexao;
+  try
+    Logar(tplLog, ' : Conectando Origem ::');
+    FModelFirebird := TModelConexao.Create(FParmFirebird);
+    FDConFirebird := FModelFirebird.GetConexao;
+    Logar(tplLog, ' : Conectado Origem ::');
+  except
+    on e:Exception do begin
+      Logar(tplLog, ' : Conectando Origem ::' + e.Message);
+    end;
+  end;
 
-//  oParOracle := TParametrosConexao.New('127.0.0.1', '1521', 'LOCAL_ORCL', 'VIASOFT', 'VIASOFT', 'Ora');
-  FModelOracle := TModelConexao.Create(FParOracle);
-  FDConOracle := FModelOracle.GetConexao;
+  try
+    Logar(tplLog, ' : Conectando Destino ::');
+  //  oParOracle := TParametrosConexao.New('127.0.0.1', '1521', 'LOCAL_ORCL', 'VIASOFT', 'VIASOFT', 'Ora');
+    FModelOracle := TModelConexao.Create(FParOracle);
+    FDConOracle := FModelOracle.GetConexao;
+    Logar(tplLog, ' : Conectado Destino ::');
+ except
+    on e:Exception do begin
+      Logar(tplLog, ' : Conectando Destino ::' + e.Message);
+    end;
+  end;
 
   qryTabelas.Connection := FDConFirebird;
 end;
 
 
-constructor TThreadMoveDados.Create(CreateSuspended: Boolean);
+constructor TThreadMoveDados.Create;
 begin
-  inherited Create(True);
-  Self.FreeOnTerminate := True;
+  inherited Create;
   qryTabelas := TFDQuery.Create(nil);
 end;
 
@@ -165,6 +218,7 @@ end;
 procedure TThreadMoveDados.CarregarTabelasSistema;
 begin
   try
+    Logar(tplLog,' Carregando tabelas ');
     qryTabelas.Close;
     qryTabelas.SQL.Text := FConsulta;
 //    qryTabelas.SQL.Text := 'SELECT * FROM MIGRATABELAS WHERE TABELA = ''PCLASFIS'''; //MIGRAR = '+ QuotedStr('S') +
@@ -184,7 +238,8 @@ procedure TThreadMoveDados.Logar(eTpLog: tpLog; cMsg: String);
 begin
   FcMsg := cMsg;
   FeTpLog := eTpLog;
-  Synchronize(SyncLogar);
+  SyncLogar;
+  //Synchronize(SyncLogar);
 end;
 
 
@@ -195,7 +250,19 @@ begin
     FmeLog.Lines.Add(FormatDateTime('yyyy-mm-dd hh:mm:sssss', now)  + ' : ' + FcMsg)
   else if (FeTpLog = tplErro) then
     FmeErros.Lines.Add(FormatDateTime('yyyy-mm-dd hh:mm:sssss', now)  + ' : ' + FcMsg);
-  FpbStatus.Position := Round((FnTabelaAtual/FnTotalTabelas)*100);
+  //FpbStatus.Position := Round((FnTabelaAtual/FnTotalTabelas)*100);
 end;
 
 end.
+
+{
+  Datamove - Conversor de Banco de Dados Firebird para Oracle
+  licensed under a APACHE 2.0
+
+  Projeto Particular desenvolvido por Artur Barth e Gilvano Piontkoski para realizar conversão de banco de dados
+  firebird para Oracle. Esse não é um projeto desenvolvido pela VIASOFT.
+
+  Toda e qualquer alteração deve ser submetida à
+  https://github.com/Arturbarth/Datamove
+}
+

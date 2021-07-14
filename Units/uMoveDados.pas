@@ -1,3 +1,15 @@
+{
+  Datamove - Conversor de Banco de Dados Firebird para Oracle
+  licensed under a APACHE 2.0
+
+  Projeto Particular desenvolvido por Artur Barth e Gilvano Piontkoski para realizar conversão de banco de dados
+  firebird para Oracle. Esse não é um projeto desenvolvido pela VIASOFT.
+
+  Toda e qualquer alteração deve ser submetida à
+  https://github.com/Arturbarth/Datamove
+}
+
+
 unit uMoveDados;
 
 interface
@@ -99,7 +111,14 @@ end;
 
 procedure TMoveDados.MoverDadosTabela(cTabela: String);
 begin
-  ExecuteCommandDestino('TRUNCATE TABLE ' + cTabela);
+  {if (cTabela = 'VSCONSULTA') then
+    begin
+    ExecuteCommandDestino('DELETE FROM ' + cTabela + ' WHERE SQLID < 0');
+  end
+  else
+    begin}
+    ExecuteCommandDestino('TRUNCATE TABLE ' + cTabela);
+  {end;}
 //  qryOrigem.SQL.Text := 'SELECT * FROM ' + cTabela;
 //  qryOrigem.Open;
   FDBatchMoveSQLReader1.TableName := cTabela;
@@ -142,3 +161,15 @@ end;
 
 
 end.
+
+{
+  Datamove - Conversor de Banco de Dados Firebird para Oracle
+  licensed under a APACHE 2.0
+
+  Projeto Particular desenvolvido por Artur Barth e Gilvano Piontkoski para realizar conversão de banco de dados
+  firebird para Oracle. Esse não é um projeto desenvolvido pela VIASOFT.
+
+  Toda e qualquer alteração deve ser submetida à
+  https://github.com/Arturbarth/Datamove
+}
+

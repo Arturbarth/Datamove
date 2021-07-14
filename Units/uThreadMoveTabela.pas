@@ -1,3 +1,15 @@
+{
+  Datamove - Conversor de Banco de Dados Firebird para Oracle
+  licensed under a APACHE 2.0
+
+  Projeto Particular desenvolvido por Artur Barth e Gilvano Piontkoski para realizar conversão de banco de dados
+  firebird para Oracle. Esse não é um projeto desenvolvido pela VIASOFT.
+
+  Toda e qualquer alteração deve ser submetida à
+  https://github.com/Arturbarth/Datamove
+}
+
+
 unit uThreadMoveTabela;
 
 interface
@@ -11,21 +23,17 @@ uses
   FireDAC.Phys.FB, uConexoes, uParametrosConexao, uEnum, Vcl.StdCtrls;
 
 type
-  TThreadMoveTabelas = class(TThread)
+  TThreadMoveTabelas = class
   private
     FcMsg: String;
     FeTpLog: tpLog;
     FModelFirebird: TModelConexao;
     FModelOracle: TModelConexao;
     qryTabelas: TFDQuery;
-    FDConOracle: TFDConnection;
-    FDConFireBird: TFDConnection;
-    procedure Logar(eTpLog: tpLog; cMsg: String);
-    procedure SyncLogar;
-    procedure ConfigurarConexoes;
-    procedure MoverTabela(cTabela: String; nLinhas: Integer);
+
+
   protected
-    procedure Execute; override;
+    //procedure Execute; override;
   public
     FmeLog: TMemo;
     FmeErros: TMemo;
@@ -37,7 +45,16 @@ type
     FnTabelaAtual: Integer;
     Finalizou: Boolean;
     FParOracle, FParmFirebird: IParametrosConexao;
-    constructor Create(CreateSuspended: Boolean); overload;
+
+    FDConOracle: TFDConnection;
+    FDConFireBird: TFDConnection;
+
+    procedure Logar(eTpLog: tpLog; cMsg: String);
+    procedure SyncLogar;
+    procedure ConfigurarConexoes;
+    procedure MoverTabela(cTabela: String; nLinhas: Integer);
+
+    constructor Create; overload;
     destructor Destroy; override;
   end;
 
@@ -46,7 +63,7 @@ implementation
 uses System.SysUtils, uLog, uMoveDados;
 { TThreadMoveTabelas }
 
-procedure TThreadMoveTabelas.Execute;
+{procedure TThreadMoveTabelas.Execute;
 begin
   try
     ConfigurarConexoes;
@@ -54,7 +71,7 @@ begin
   finally
     Finalizou := true;
   end;
-end;
+end;}
 
 procedure TThreadMoveTabelas.MoverTabela(cTabela: String; nLinhas: Integer);
 var
@@ -64,6 +81,8 @@ begin
   try
     try
       Logar(tplLog, ' : Inciando copia da tabela ' + cTabela + '('+ IntToStr(nLinhas) +' registros) - Tabela' + IntToStr(FnTabelaAtual) + ' de ' + IntToStr(FnTotalTabelas));
+      qryTabelas.Connection := FDConFirebird;
+
       dtini := Now;
       oMove := TMoveDados.Create(FDConFirebird, FDConOracle);
       oMove.MoverDadosTabela(cTabela);
@@ -94,14 +113,14 @@ begin
   FModelOracle := TModelConexao.Create(FParOracle);
   FDConOracle := FModelOracle.GetConexao;
 
-  qryTabelas.Connection := FDConFirebird;
+
 end;
 
 
-constructor TThreadMoveTabelas.Create(CreateSuspended: Boolean);
+constructor TThreadMoveTabelas.Create{(CreateSuspended: Boolean)};
 begin
-  inherited Create(True);
-  Self.FreeOnTerminate := True;
+  inherited Create;
+  //lf.FreeOnTerminate := True;
   qryTabelas := TFDQuery.Create(nil);
 end;
 
@@ -117,7 +136,8 @@ procedure TThreadMoveTabelas.Logar(eTpLog: tpLog; cMsg: String);
 begin
   FcMsg := cMsg;
   FeTpLog := eTpLog;
-  Synchronize(SyncLogar);
+  SyncLogar;
+  //nchronize(SyncLogar);
 end;
 
 
@@ -132,3 +152,15 @@ begin
 end;
 
 end.
+
+{
+  Datamove - Conversor de Banco de Dados Firebird para Oracle
+  licensed under a APACHE 2.0
+
+  Projeto Particular desenvolvido por Artur Barth e Gilvano Piontkoski para realizar conversão de banco de dados
+  firebird para Oracle. Esse não é um projeto desenvolvido pela VIASOFT.
+
+  Toda e qualquer alteração deve ser submetida à
+  https://github.com/Arturbarth/Datamove
+}
+

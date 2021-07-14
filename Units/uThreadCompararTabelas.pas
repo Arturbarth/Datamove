@@ -1,3 +1,15 @@
+{
+  Datamove - Conversor de Banco de Dados Firebird para Oracle
+  licensed under a APACHE 2.0
+
+  Projeto Particular desenvolvido por Artur Barth e Gilvano Piontkoski para realizar conversão de banco de dados
+  firebird para Oracle. Esse não é um projeto desenvolvido pela VIASOFT.
+
+  Toda e qualquer alteração deve ser submetida à
+  https://github.com/Arturbarth/Datamove
+}
+
+
 unit uThreadCompararTabelas;
 
 interface
@@ -22,13 +34,11 @@ type
 
     qryTabelasOrigem: TFDQuery;
     qryTabelasDestino: TFDQuery;
-    FDConOracle: TFDConnection;
-    FDConFireBird: TFDConnection;
 
     FModelFirebird: TModelConexao;
     FModelOracle: TModelConexao;
 
-    procedure ConfigurarConexoes;
+
     procedure Logar(eTpLog: tpLog; cMsg: String);
     procedure SyncLogar;
 
@@ -44,8 +54,14 @@ type
     FmeErros: TMemo;
     FpbStatus: TProgressBar;
     FParOracle, FParmFirebird: IParametrosConexao;
+
+    FDConOracle: TFDConnection;
+    FDConFireBird: TFDConnection;
+
     constructor Create(CreateSuspended: Boolean); overload;
     destructor Destroy; override;
+
+    procedure ConfigurarConexoes;
 
   end;
 
@@ -79,6 +95,7 @@ end;
 
 procedure TThreadCompararTabelas.CompararTabelasOrigemXDestino;
 begin
+  ConfigurarConexoes;
   AbrirTabelasOrigem;
   AbrirTabelasDestino;
   CompararTabelas;
@@ -108,15 +125,15 @@ var
 //var
 //  oParOracle, oParmFirebird: IParametrosConexao;
 begin
-//  oParmFirebird := TParametrosConexao.New('127.0.0.1', '3050', 'E:\Bancos\INDIANAAGRI_MIGRA.FDB', 'VIASOFT', '153', 'FB');
-  FModelFirebird := TModelConexao.Create(FParmFirebird);
-  FDConFirebird := FModelFirebird.GetConexao;
+  //oParmFirebird := TParametrosConexao.New('127.0.0.1', '3050', 'C:\Firebird\Migracao\AGRO_NOVO.FDB', 'SYSDBA', 'masterkey', 'FB');
+  //FModelFirebird := TModelConexao.Create(FParmFirebird);
+  //FDConFirebird := FModelFirebird.GetConexao;
 
 //  oParOracle := TParametrosConexao.New('127.0.0.1', '1521', 'LOCAL_ORCL', 'VIASOFT', 'VIASOFT', 'Ora');
-  FModelOracle := TModelConexao.Create(FParOracle);
-  FDConOracle := FModelOracle.GetConexao;
+  //FModelOracle := TModelConexao.Create(FParOracle);
+  //FDConOracle := FModelOracle.GetConexao;
 
-  qryTabelasOrigem.Connection := FDConFirebird;
+  qryTabelasOrigem.Connection  := FDConFirebird;
   qryTabelasDestino.Connection := FDConOracle;
 
 
@@ -151,8 +168,8 @@ end;
 
 destructor TThreadCompararTabelas.Destroy;
 begin
-  FModelFirebird.Free;
-  FModelOracle.Free;
+  //FModelFirebird.Free;
+  //FModelOracle.Free;
   qryTabelasOrigem.Free;
   qryTabelasDestino.Free;
   inherited;
@@ -160,7 +177,7 @@ end;
 
 procedure TThreadCompararTabelas.Execute;
 begin
-  ConfigurarConexoes;
+  //ConfigurarConexoes;
   CompararTabelasOrigemXDestino;
 end;
 
@@ -182,3 +199,15 @@ begin
 end;
 
 end.
+
+{
+  Datamove - Conversor de Banco de Dados Firebird para Oracle
+  licensed under a APACHE 2.0
+
+  Projeto Particular desenvolvido por Artur Barth e Gilvano Piontkoski para realizar conversão de banco de dados
+  firebird para Oracle. Esse não é um projeto desenvolvido pela VIASOFT.
+
+  Toda e qualquer alteração deve ser submetida à
+  https://github.com/Arturbarth/Datamove
+}
+
