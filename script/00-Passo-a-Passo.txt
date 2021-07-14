@@ -1,0 +1,159 @@
+Pré-Migração:
+- Agenda com cliente
+- Pessoas Envolvidas
+- Escritório de Projetos com Elenice
+- Consultor Técnico
+- Conversão de outras unidades
+- Versão do Oracle NÃO PODE SER EXPRESS
+
+MIGRACAO BANCO FIREBIRD PARA ORACLE  
+01 - Importar banco Firebird do Cliente
+02 - Importar banco de dados Oracle Zerado
+03 - Atualizar ambos os bancos para a mesma versão. LOTE 724 (Marcela)
+04 - Usar ferramenta de migração
+05 - Criar tabelas personalizadas. 
+06 - Recriar sequencias
+07 - Exportar DMP
+
+
+1 - Importar o dump base do sistema (só tabelas, trigger... sem dados)
+
+
+2 - ATUALIZAR os DOIS BANCOS para a mesma VERSÃO do At.   <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Ultima disponivel no diretório: L:\Suporte\Instala\Bd
+
+***********************************************************************************************************************
+**** FIREBIRD  ****
+***********************************************************************************************************************
+
+3 - Preparação do banco Firebird
+ 3.0. Desativar triggers no firebird:
+ update 
+    rdb$triggers 
+set 
+    rdb$trigger_inactive = 1
+where 
+    rdb$trigger_source is not null 
+    and ((rdb$system_flag = 0) 
+    or (rdb$system_flag is null))
+
+
+ 3.1. Converter todos os campos time do banco firebird para varchar(15).
+   fazer o seguinte select para descobrir as tabelas
+
+SELECT 'ALTER TABLE ' || C.TABELA || ' ALTER ' || C.COLUNA || '    TYPE VARCHAR(30); ' 
+ FROM PCOLUNAS C
+ INNER JOIN rdb$relations r
+  ON  r.rdb$relation_name = C.TABELA
+where rdb$view_blr is null and (rdb$system_flag is null or rdb$system_flag = 0)
+and rdb$owner_name = 'VIASOFT'
+and C.TIPO = 'HORA'
+   
+SELECT 'UPDATE ' || C.TABELA || ' SET ' || C.COLUNA || ' = COPY   ('||C.COLUNA ||', 1,8); '
+    FROM PCOLUNAS C
+    INNER JOIN rdb$relations r
+  ON  r.rdb$relation_name = C.TABELA
+where rdb$view_blr is null and (rdb$system_flag is null or rdb$system_flag = 0)
+and rdb$owner_name = 'VIASOFT'
+and C.TIPO = 'HORA'  
+
+ 3.2. Ajustar valor do campo SUBTIPO da tabela SINTLAYOUT para nao       ter valor NULL
+
+     UPDATE sintlayout SET sintlayout.subtipo = '.'
+     WHERE (sintlayout.subtipo = '') OR (sintlayout.subtipo IS NULL);
+
+
+     UPDATE FIMPORTL SET FIMPORTL.coluna = '.'
+     WHERE (FIMPORTL.coluna = '') OR (FIMPORTL.coluna IS NULL);
+
+
+  3.3 UPDATE LOGSYNCPAF SET MOTIVO = '.'
+  
+  3.4 Ajustar da ITEMSALDOINI
+  	UPDATE ITEMSALDOINI SET DTIMPLANTACAO='01.01.1950' WHERE DTIMPLANTACAO < '01.01.1950';
+
+  3.5 UPDATE NFCANCELAMENTO SET CHAVEACESSO='.' WHERE CHAVEACESSO = '';
+
+  3.6 UPDATE WMUSUARIO SET RASTRINICIOMANHA=NULL WHERE RASTRINICIOMANHA = '';
+		UPDATE WMUSUARIO SET RASTRFIMMANHA=NULL WHERE RASTRFIMMANHA = '';
+		UPDATE WMUSUARIO SET RASTRINCIOTARDE=NULL WHERE RASTRINCIOTARDE = '';
+		UPDATE WMUSUARIO SET RASTRFIMTARDE=NULL WHERE RASTRFIMTARDE = '';
+
+ 
+
+
+***********************************************************************************************************************
+**** ORACLE  ****
+***********************************************************************************************************************
+
+ 4 - Preparacao do banco Oracle
+
+	4.1 - Desativar trigger e FK usando o script: 03-ORACLE-disable_trigger_fk.sql
+
+	4.2 - Criar TABELAS e COLUNAS personalizadas
+		select distinct tabela from pcolun_u
+
+		*CONTAMOV
+		CARGAFAT_U
+		CONTAMOV_U
+		PUSERS_U
+		TABPRECOCAB_U
+		U_PANOMESVENDAS
+		U_RELACIONAMENTO
+		U_ROTAS
+
+	4.3 - ALTER TABLE RECIBO MODIFY COMPEMITENTE  VARCHAR2(80);
+
+	4.4 - ALTER TABLE PMENUBAR ADD CODTBARSIS INTEGER;
+
+	4.5 ALTER TABLE SETORES ADD TRANSARROZ VARCHAR(1);
+
+***********************************************************************************************************************
+**** IMPORTAÇÃO  ****
+***********************************************************************************************************************
+
+*************************
+** NÃO IMPORTAR **
+ VSCONSULTA
+ PAUDITA
+ UPGBANCOCLI
+ UPGCOMANDO
+ UPGCOMANDOEX
+
+Marcar a opção, de limpar tabelas ao importar
+
+*************************
+
+
+
+- Após Importação
+
+
+Ativar Trigger e FK
+
+Verificar se possui o mesmo numero de tabelas quando foi criado o script
+
+ok Criar tabelas personalizadas
+
+select distinct tabela
+from pcolun_u;
+
+
+select count(*) tabela
+from pcolun_u;
+
+UPDATE PDUPREC SET NOSSONUMERO=NULL WHERE NOSSONUMERO=0;
+
+***********************************************************************************************************************
+**** RECRIAR SEQUENCES  ****
+***********************************************************************************************************************
+
+
+***********************************************************************************************************************
+**** ATUALIZAR EXE E CONEXÃO  ****
+***********************************************************************************************************************
+
+***********************************************************************************************************************
+**** AJUSTES DURANTE A SEMANA  ****
+***********************************************************************************************************************
+
